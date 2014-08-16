@@ -10,6 +10,7 @@ import Data.Maybe (fromJust)
 import Data.DateTime
 import Text.XML.Light.Types
 import Text.XML.Light.Output (ppTopElement)
+import Network.Curl (withCurlDo, curlPost)
 
 type Field   = String
 type Episode = [Field]
@@ -23,7 +24,7 @@ mediaURL    = "http://static.joshuagoodw.in/bucket/"
 mediaPath   = "/usr/share/nginx/html/joshuagoodw.in/bucket/"
 historyPath = "/home/josh/.get_iplayer/download_history"
 outputPath  = "/usr/share/nginx/html/joshuagoodw.in/bucket/podcast/i.xml"
-
+hub         = "http://pubsubhubbub.appspot.com/"
 
 cauterise :: String -> History
 cauterise text = map toFields episodes
@@ -49,12 +50,12 @@ simpleAttr key value = Attr (QName key Nothing Nothing) value
 
 simpleElement :: String -> String -> Content
 simpleElement key value = 
-    (Elem (Element
+    Elem (Element
         (QName key Nothing Nothing)
         []
         [(Text (CData CDataText value Nothing))]
         Nothing
-    ))
+        )
 
 item :: Episode -> Content
 item (_:name:episode:_:timestamp:_:filename:_:duration:description:_:_:_:link:_) =
@@ -67,14 +68,14 @@ item (_:name:episode:_:timestamp:_:filename:_:duration:description:_:_:_:link:_)
         , simpleElement "link"            link
         , simpleElement "guid"            (toURL filename)
         , simpleElement "itunes:duration" duration
-        , Elem
-                (Element
-                    (QName "enclosure" Nothing Nothing)
-                    [ simpleAttr "url"    (toURL filename)
-                    , simpleAttr "type"   "audio/m4a"
-                    ]
-                    []
-                    Nothing)
+        , Elem (Element
+            (QName "enclosure" Nothing Nothing)
+            [ simpleAttr "url"    (toURL filename)
+            , simpleAttr "type"   "audio/m4a"
+            ]
+            []
+            Nothing
+            )
         ]
         Nothing)
 
@@ -97,6 +98,22 @@ feed history time = (Element
                 , simpleElement "link"          feedURL
                 , simpleElement "pubDate"       (rfcFormatDateTime $ fromSeconds $ read latestTimestamp)
                 , simpleElement "lastBuildDate" (rfcFormatDateTime time)
+                , Elem (Element
+                    (QName "link" Nothing (Just "atom"))
+                    [ simpleAttr "rel"  "hub"
+                    , simpleAttr "href" hub
+                    ]
+                    []
+                    Nothing
+                    )
+                , Elem (Element
+                    (QName "link" Nothing (Just "atom"))
+                    [ simpleAttr "rel"  "self"
+                    , simpleAttr "href" feedURL
+                    ]
+                    []
+                    Nothing
+                    )
                 ]
                 ++
                 (map item history)
@@ -108,14 +125,27 @@ feed history time = (Element
     where latestTimestamp = maximum timestamps
           timestamps = map timestamp history
           timestamp x = x !! 4
-  
+
+shouldAnnounce :: DateTime -> DateTime -> Bool
+shouldAnnounce now latestTimestamp = (diffMinutes' now latestTimestamp) < 5
+
+maybeAnnounce :: DateTime -> DateTime -> IO ()
+maybeAnnounce now latestTimestamp | shouldAnnounce now latestTimestamp = pubsubhubbub
+                                  | otherwise = return ()
+
+pubsubhubbub = withCurlDo $ do
+    curlPost hub ["hub.mode=publish", "hub.url=" ++ feedURL]
+    return ()
 
 main :: IO ()
 main = do
     text <- readFile historyPath
-    let episodes = filter hasEpisodePathCorrectPrefix $ cauterise text
+    let episodes = reverse $ filter hasEpisodePathCorrectPrefix $ cauterise text
     episodes <- filterM doesEpisodeFileExist episodes
     time <- getCurrentTime
     let xml = ppTopElement $ feed episodes time
     putStrLn xml
     writeFile outputPath xml
+    -- contact the pubsubhubbub hub if the latest epsiode was downloaded less than 5 minutes ago
+    let latestTimestamp = fromSeconds $ read $ maximum $ map (!! 4) episodes
+    maybeAnnounce time latestTimestamp

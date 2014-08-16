@@ -7,4 +7,4 @@ cabal-version:       >=1.8
 
 executable iplayer-podcast
   main-is:           iplayer-podcast.hs
-  build-depends:     base ==4.7.*, xml ==1.3.*, datetime ==0.2.*, split ==0.2.*, unix ==2.7.*, directory ==1.2.*
+  build-depends:     base ==4.7.*, xml ==1.3.*, datetime ==0.2.*, split ==0.2.*, unix ==2.7.*, directory ==1.2.*, curl ==1.3.*
