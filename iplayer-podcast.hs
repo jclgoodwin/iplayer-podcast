@@ -96,41 +96,37 @@ feed history time = (Element
     , simpleAttr "xmlns:itunes" "http://www.itunes.com/dtds/podcast-1.0.dtd"
     , simpleAttr "xml:lang"     "en-GB"
     ]
-    (
-        [
-        Elem
-            (Element
-            (QName "channel" Nothing Nothing)
-            []
-            (
-                [ simpleElement "title"        "iPlayer Recordings"
-                , simpleElement "description"  "Mostly weak drama"
-                , simpleElement "link"          feedURL
-                , simpleElement "pubDate"       (rfcFormatDateTime $ fromSeconds $ read latestTimestamp)
-                , simpleElement "lastBuildDate" (rfcFormatDateTime time)
-                , Elem (Element
-                    (QName "link" Nothing (Just "atom"))
-                    [ simpleAttr "rel"  "hub"
-                    , simpleAttr "href" hubURL
-                    ]
-                    []
-                    Nothing
-                    )
-                , Elem (Element
-                    (QName "link" Nothing (Just "atom"))
-                    [ simpleAttr "rel"  "self"
-                    , simpleAttr "href" feedURL
-                    ]
-                    []
-                    Nothing
-                    )
+    [ Elem (Element
+        (QName "channel" Nothing Nothing)
+        []
+        (
+            [ simpleElement "title"        "iPlayer Recordings"
+            , simpleElement "description"  "Mostly weak drama"
+            , simpleElement "link"          feedURL
+            , simpleElement "pubDate"       (rfcFormatDateTime $ fromSeconds $ read latestTimestamp)
+            , simpleElement "lastBuildDate" (rfcFormatDateTime time)
+            , Elem (Element
+                (QName "link" Nothing (Just "atom"))
+                [ simpleAttr "rel"  "hub"
+                , simpleAttr "href" hubURL
                 ]
-                ++
-                (map item history)
-            )
-            Nothing)
-        ]
-    )
+                []
+                Nothing
+                )
+            , Elem (Element
+                (QName "link" Nothing (Just "atom"))
+                [ simpleAttr "rel"  "self"
+                , simpleAttr "href" feedURL
+                ]
+                []
+                Nothing
+                )
+            ]
+            ++
+            (map item history)
+        )
+        Nothing)
+    ]
     Nothing)
     where latestTimestamp = maximum timestamps
           timestamps = map timestamp history
