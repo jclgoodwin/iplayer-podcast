@@ -8,7 +8,7 @@ import Data.List (isPrefixOf, stripPrefix)
 import Data.List.Split (wordsBy)
 import Data.Maybe (fromJust)
 import Data.DateTime
-import Text.XML.Light.Types
+import Text.XML.Light.Types (Content(Elem, Text), Element(..), Attr(..), QName(..), CData(..), CDataKind(CDataText))
 import Text.XML.Light.Output (ppElement)
 import Network.Curl (withCurlDo, curlPost)
 
