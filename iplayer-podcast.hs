@@ -25,7 +25,7 @@ mediaPath     = "/usr/share/nginx/html/joshuagoodw.in/bucket/"
 historyPath   = "/home/josh/.get_iplayer/download_history"
 outputPath    = "/usr/share/nginx/html/joshuagoodw.in/bucket/podcast/i.xml"
 stylesheetURL = "i.xsl"
-hubURL        = "http://pubsubhubbub.appspot.com/"
+hubURL        = "https://pubsubhubbub.appspot.com/"
 
 
 cauterise :: String -> History
