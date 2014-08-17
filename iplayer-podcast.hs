@@ -9,7 +9,7 @@ import Data.List.Split (wordsBy)
 import Data.Maybe (fromJust)
 import Data.DateTime
 import Text.XML.Light.Types
-import Text.XML.Light.Output (ppTopElement)
+import Text.XML.Light.Output (ppElement)
 import Network.Curl (withCurlDo, curlPost)
 
 type Field   = String
@@ -19,12 +19,14 @@ type History = [Episode]
 
 -- configuration
 
-feedURL     = "http://static.joshuagoodw.in/bucket/podcast/"
-mediaURL    = "http://static.joshuagoodw.in/bucket/"
-mediaPath   = "/usr/share/nginx/html/joshuagoodw.in/bucket/"
-historyPath = "/home/josh/.get_iplayer/download_history"
-outputPath  = "/usr/share/nginx/html/joshuagoodw.in/bucket/podcast/i.xml"
-hub         = "http://pubsubhubbub.appspot.com/"
+feedURL       = "http://static.joshuagoodw.in/bucket/podcast/"
+mediaURL      = "http://static.joshuagoodw.in/bucket/"
+mediaPath     = "/usr/share/nginx/html/joshuagoodw.in/bucket/"
+historyPath   = "/home/josh/.get_iplayer/download_history"
+outputPath    = "/usr/share/nginx/html/joshuagoodw.in/bucket/podcast/i.xml"
+stylesheetURL = "i.xsl"
+hubURL        = "http://pubsubhubbub.appspot.com/"
+
 
 cauterise :: String -> History
 cauterise text = map toFields episodes
@@ -41,6 +43,14 @@ doesEpisodeFileExist e = do
 
 toURL :: String -> String
 toURL p = mediaURL ++ fromJust (stripPrefix mediaPath p)
+
+-- like the ppTopElement included in Text.XML.Light.Output, but with an <?xml-stylesheet?> bit
+ppTopElement :: Element -> String
+ppTopElement e = "<?xml version='1.0'?>\n"
+                ++ "<?xml-stylesheet type='text/xsl' href='"
+                ++ stylesheetURL
+                ++ "'?>\n"
+                ++ ppElement e
 
 rfcFormatDateTime :: DateTime -> String
 rfcFormatDateTime = formatDateTime "%a, %d %b %Y %H:%M:%S %z"
@@ -101,7 +111,7 @@ feed history time = (Element
                 , Elem (Element
                     (QName "link" Nothing (Just "atom"))
                     [ simpleAttr "rel"  "hub"
-                    , simpleAttr "href" hub
+                    , simpleAttr "href" hubURL
                     ]
                     []
                     Nothing
@@ -134,7 +144,7 @@ maybeAnnounce now latestTimestamp | shouldAnnounce now latestTimestamp = pubsubh
                                   | otherwise = return ()
 
 pubsubhubbub = withCurlDo $ do
-    curlPost hub ["hub.mode=publish", "hub.url=" ++ feedURL]
+    curlPost hubURL ["hub.mode=publish", "hub.url=" ++ feedURL]
     return ()
 
 main :: IO ()
