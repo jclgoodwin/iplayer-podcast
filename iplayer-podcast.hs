@@ -59,7 +59,7 @@ simpleAttr :: String -> String -> Attr
 simpleAttr key value = Attr (QName key Nothing Nothing) value
 
 simpleElement :: String -> String -> Content
-simpleElement key value = 
+simpleElement key value =
     Elem (Element
         (QName key Nothing Nothing)
         []
@@ -93,6 +93,7 @@ feed :: History -> DateTime -> Element
 feed history time = (Element
     (QName "rss" Nothing Nothing)
     [ simpleAttr "version"      "2.0"
+    , simpleAttr "xmlns:atom"   "http://www.w3.org/2005/Atom"
     , simpleAttr "xmlns:itunes" "http://www.itunes.com/dtds/podcast-1.0.dtd"
     , simpleAttr "xml:lang"     "en-GB"
     ]
