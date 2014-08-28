@@ -8,7 +8,7 @@ import Data.List (isPrefixOf, stripPrefix)
 import Data.List.Split (wordsBy)
 import Data.Maybe (fromJust)
 import Data.DateTime
-import Text.XML.Light.Types (Content(Elem, Text), Element(..), Attr(..), QName(..), CData(..), CDataKind(CDataText))
+import Text.XML.Light.Types (Content (Elem, Text), Element (..), Attr (..), QName (..), CData (..), CDataKind (CDataText, CDataVerbatim))
 import Text.XML.Light.Output (ppElement)
 import Network.Curl (withCurlDo, curlPost)
 
@@ -72,7 +72,12 @@ item (_:name:episode:_:timestamp:_:filename:_:duration:description:_:_:_:link:_)
         []
         [ simpleElement "title"           (name ++ " - " ++ episode)
         , simpleElement "pubDate"         (rfcFormatDateTime $ fromSeconds $ read timestamp)
-        , simpleElement "description"     description
+        , Elem (Element
+            (QName "description" Nothing Nothing)
+            []
+            [Text (CData CDataVerbatim ("<p>" ++ description ++ "</p>") Nothing)]
+            Nothing
+            )
         , simpleElement "link"            link
         , simpleElement "guid"            (toURL filename)
         , simpleElement "itunes:duration" duration
