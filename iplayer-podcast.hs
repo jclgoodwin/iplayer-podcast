@@ -29,17 +29,15 @@ hubURL        = "https://pubsubhubbub.appspot.com/"
 
 
 cauterise :: String -> History
-cauterise text = map toFields episodes
-    where episodes = lines text
-          toFields episode = wordsBy (== '|') episode
+cauterise s = map toFields episodes
+    where episodes = lines s
+          toFields = wordsBy (== '|')
 
 hasEpisodePathCorrectPrefix :: Episode -> Bool
-hasEpisodePathCorrectPrefix e = isPrefixOf mediaPath (e !! 6)
+hasEpisodePathCorrectPrefix e = mediaPath `isPrefixOf` (e !! 6)
 
 doesEpisodeFileExist :: Episode -> IO Bool
-doesEpisodeFileExist e = do
-    existence <- doesFileExist (e !! 6)
-    return existence
+doesEpisodeFileExist e = doesFileExist (e !! 6)
 
 toURL :: String -> String
 toURL p = mediaURL ++ fromJust (stripPrefix mediaPath p)
@@ -56,14 +54,14 @@ rfcFormatDateTime :: DateTime -> String
 rfcFormatDateTime = formatDateTime "%a, %d %b %Y %H:%M:%S %z"
 
 simpleAttr :: String -> String -> Attr
-simpleAttr key value = Attr (QName key Nothing Nothing) value
+simpleAttr key = Attr (QName key Nothing Nothing)
 
 simpleElement :: String -> String -> Content
 simpleElement key value =
     Elem (Element
         (QName key Nothing Nothing)
         []
-        [(Text (CData CDataText value Nothing))]
+        [Text (CData CDataText value Nothing)]
         Nothing
         )
 
@@ -124,7 +122,7 @@ feed history time = (Element
                 )
             ]
             ++
-            (map item history)
+            map item history
         )
         Nothing)
     ]
@@ -134,12 +132,13 @@ feed history time = (Element
           timestamp x = x !! 4
 
 shouldAnnounce :: DateTime -> DateTime -> Bool
-shouldAnnounce now latestTimestamp = (diffMinutes' now latestTimestamp) < 5
+shouldAnnounce now latestTimestamp = diffMinutes' now latestTimestamp < 5
 
 maybeAnnounce :: DateTime -> DateTime -> IO ()
 maybeAnnounce now latestTimestamp | shouldAnnounce now latestTimestamp = pubsubhubbub
                                   | otherwise = return ()
 
+pubsubhubbub :: IO ()
 pubsubhubbub = withCurlDo $ do
     curlPost hubURL ["hub.mode=publish", "hub.url=" ++ feedURL]
     return ()
