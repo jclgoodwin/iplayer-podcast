@@ -1,9 +1,8 @@
 module Main where
 
-import System.IO (readFile, writeFile)
+import System.IO (readFile, writeFile, IOMode (ReadMode), withFile, hFileSize)
 import System.Directory (doesFileExist)
-import System.Posix (getFileStatus, fileSize, FileOffset)
-import Control.Monad (filterM)
+import Control.Monad (filterM, mapM)
 import Data.List (isPrefixOf, stripPrefix)
 import Data.List.Split (wordsBy)
 import Data.Maybe (fromJust)
@@ -15,6 +14,8 @@ import Network.Curl (withCurlDo, curlPost)
 type Field   = String
 type Episode = [Field]
 type History = [Episode]
+type EpisodeWithLength  = (Episode, Integer)
+type HistoryWithLengths = [EpisodeWithLength]
 
 
 -- configuration
@@ -38,6 +39,11 @@ hasEpisodePathCorrectPrefix e = mediaPath `isPrefixOf` (e !! 6)
 
 doesEpisodeFileExist :: Episode -> IO Bool
 doesEpisodeFileExist e = doesFileExist (e !! 6)
+
+addLength :: Episode -> IO EpisodeWithLength
+addLength e = do
+    length <- withFile (e !! 6) ReadMode hFileSize
+    return (e, length)
 
 toURL :: String -> String
 toURL p = mediaURL ++ fromJust (stripPrefix mediaPath p)
@@ -65,8 +71,8 @@ simpleElement key value =
         Nothing
         )
 
-item :: Episode -> Content
-item (_:name:episode:_:timestamp:_:filename:_:duration:description:_:_:_:link:_) =
+item :: EpisodeWithLength -> Content
+item (_:name:episode:_:timestamp:_:filename:_:duration:description:_:_:_:link:_, length) =
     Elem (Element
         (QName "item" Nothing Nothing)
         []
@@ -85,6 +91,7 @@ item (_:name:episode:_:timestamp:_:filename:_:duration:description:_:_:_:link:_)
             (QName "enclosure" Nothing Nothing)
             [ simpleAttr "url"    (toURL filename)
             , simpleAttr "type"   "audio/m4a"
+            , simpleAttr "length" (show length)
             ]
             []
             Nothing
@@ -92,8 +99,9 @@ item (_:name:episode:_:timestamp:_:filename:_:duration:description:_:_:_:link:_)
         ]
         Nothing)
 
-feed :: History -> DateTime -> Element
-feed history time = (Element
+feed :: HistoryWithLengths -> DateTime -> Element
+feed history time =
+    Element
     (QName "rss" Nothing Nothing)
     [ simpleAttr "version"      "2.0"
     , simpleAttr "xmlns:atom"   "http://www.w3.org/2005/Atom"
@@ -131,10 +139,10 @@ feed history time = (Element
         )
         Nothing)
     ]
-    Nothing)
+    Nothing
     where latestTimestamp = maximum timestamps
           timestamps = map timestamp history
-          timestamp x = x !! 4
+          timestamp (x, _) = x !! 4
 
 shouldAnnounce :: DateTime -> DateTime -> Bool
 shouldAnnounce now latestTimestamp = diffMinutes' now latestTimestamp < 5
@@ -153,8 +161,9 @@ main = do
     text <- readFile historyPath
     let episodes = reverse $ filter hasEpisodePathCorrectPrefix $ cauterise text
     episodes <- filterM doesEpisodeFileExist episodes
+    episodesWithLengths <- mapM addLength episodes
     time <- getCurrentTime
-    let xml = ppTopElement $ feed episodes time
+    let xml = ppTopElement $ feed episodesWithLengths time
     putStrLn xml
     writeFile outputPath xml
     -- contact the pubsubhubbub hub if the latest epsiode was downloaded less than 5 minutes ago
