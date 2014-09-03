@@ -48,16 +48,22 @@ addLength e = do
 toURL :: String -> String
 toURL p = mediaURL ++ fromJust (stripPrefix mediaPath p)
 
--- like the ppTopElement included in Text.XML.Light.Output, but with an <?xml-stylesheet?> bit
-ppTopElement :: Element -> String
-ppTopElement e = "<?xml version='1.0'?>\n"
-                ++ "<?xml-stylesheet type='text/xsl' href='"
-                ++ stylesheetURL
-                ++ "'?>\n"
-                ++ ppElement e
+latestTimestamp :: HistoryWithLengths -> DateTime
+latestTimestamp h = fromSeconds $ read $ maximum timestamps
+    where timestamps = map timestamp h
+          timestamp (x, _) = x !! 4
 
 rfcFormatDateTime :: DateTime -> String
 rfcFormatDateTime = formatDateTime "%a, %d %b %Y %H:%M:%S %z"
+
+-- like the ppTopElement included in Text.XML.Light.Output,
+-- but with an <?xml-stylesheet?> bit
+ppTopElement :: Element -> String
+ppTopElement e = "<?xml version='1.0'?>\n"
+    ++ "<?xml-stylesheet type='text/xsl' href='"
+    ++ stylesheetURL
+    ++ "'?>\n"
+    ++ ppElement e
 
 simpleAttr :: String -> String -> Attr
 simpleAttr key = Attr (QName key Nothing Nothing)
@@ -76,8 +82,8 @@ item (_:name:episode:_:timestamp:_:filename:_:duration:description:_:_:_:link:_,
     Elem (Element
         (QName "item" Nothing Nothing)
         []
-        [ simpleElement "title"           (name ++ " - " ++ episode)
-        , simpleElement "pubDate"         (rfcFormatDateTime $ fromSeconds $ read timestamp)
+        [ simpleElement "title"   (name ++ " - " ++ episode)
+        , simpleElement "pubDate" (rfcFormatDateTime $ fromSeconds $ read timestamp)
         , Elem (Element
             (QName "description" Nothing Nothing)
             []
@@ -100,7 +106,7 @@ item (_:name:episode:_:timestamp:_:filename:_:duration:description:_:_:_:link:_,
         Nothing)
 
 feed :: HistoryWithLengths -> DateTime -> Element
-feed history time =
+feed history currentTime =
     Element
     (QName "rss" Nothing Nothing)
     [ simpleAttr "version"      "2.0"
@@ -115,8 +121,8 @@ feed history time =
             [ simpleElement "title"        "iPlayer Recordings"
             , simpleElement "description"  "Mostly weak drama"
             , simpleElement "link"          feedURL
-            , simpleElement "pubDate"       (rfcFormatDateTime $ fromSeconds $ read latestTimestamp)
-            , simpleElement "lastBuildDate" (rfcFormatDateTime time)
+            , simpleElement "pubDate"       (rfcFormatDateTime pubDate)
+            , simpleElement "lastBuildDate" (rfcFormatDateTime currentTime)
             , Elem (Element
                 (QName "link" Nothing (Just "atom"))
                 [ simpleAttr "rel"  "hub"
@@ -140,16 +146,14 @@ feed history time =
         Nothing)
     ]
     Nothing
-    where latestTimestamp = maximum timestamps
-          timestamps = map timestamp history
-          timestamp (x, _) = x !! 4
+    where pubDate = latestTimestamp history
 
 shouldAnnounce :: DateTime -> DateTime -> Bool
-shouldAnnounce now latestTimestamp = diffMinutes' now latestTimestamp < 5
+shouldAnnounce now pubDate = diffMinutes' now pubDate < 5
 
 maybeAnnounce :: DateTime -> DateTime -> IO ()
-maybeAnnounce now latestTimestamp | shouldAnnounce now latestTimestamp = pubsubhubbub
-                                  | otherwise = return ()
+maybeAnnounce now pubDate | shouldAnnounce now pubDate = pubsubhubbub
+                          | otherwise = return ()
 
 pubsubhubbub :: IO ()
 pubsubhubbub = withCurlDo $ do
@@ -162,10 +166,10 @@ main = do
     let episodes = reverse $ filter hasEpisodePathCorrectPrefix $ cauterise text
     episodes <- filterM doesEpisodeFileExist episodes
     episodesWithLengths <- mapM addLength episodes
-    time <- getCurrentTime
-    let xml = ppTopElement $ feed episodesWithLengths time
+    currentTime <- getCurrentTime
+    let xml = ppTopElement $ feed episodesWithLengths currentTime
     putStrLn xml
     writeFile outputPath xml
-    -- contact the pubsubhubbub hub if the latest epsiode was downloaded less than 5 minutes ago
-    let latestTimestamp = fromSeconds $ read $ maximum $ map (!! 4) episodes
-    maybeAnnounce time latestTimestamp
+    -- if the latest epsiode was downloaded less than 5 minutes ago,
+    -- contact the pubsubhubbub hub
+    maybeAnnounce currentTime $ latestTimestamp episodesWithLengths
