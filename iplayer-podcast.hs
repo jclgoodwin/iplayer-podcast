@@ -28,19 +28,23 @@ isMediaFile :: FilePath -> Bool
 isMediaFile ('.':_) = False
 isMediaFile l = isSuffixOf ".m4a" l
 
--- chokes on non-iplayer files
+-- chokes on non-get_iplayer filenames
 getPID :: FilePath -> PID
 getPID e = parts !! index
     where parts = wordsBy (== '_') e
           index = (length parts) - 2
 
 toEpisode :: FilePath -> IO Episode
-toEpisode f = do
-    length <- withFile f ReadMode hFileSize
-    time <- getModificationTime f
-    return (Episode f length time)
+toEpisode name = do
+    length <- withFile path ReadMode hFileSize
+    time <- getModificationTime path
+    return (Episode name length time)
+    where path = fillPath name
 
-toURL :: String -> String
+fillPath :: FilePath -> FilePath
+fillPath p = mediaPath ++ "/" ++ p
+
+toURL :: FilePath -> String
 toURL p = mediaURL ++ p
 
 latestTimestamp :: [Episode] -> DateTime
