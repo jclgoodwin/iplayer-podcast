@@ -9,7 +9,7 @@ import Data.Maybe (fromJust)
 import Data.DateTime
 import Text.XML.Light.Types (Content (Elem, Text), Element (..), Attr (..), QName (..), CData (..), CDataKind (CDataText, CDataVerbatim))
 import Text.XML.Light.Output (ppElement)
-import Network.Curl (withCurlDo, curlPost)
+import Network.HTTP (simpleHTTP, postRequestWithBody)
 
 type Field   = String
 type Episode = [Field]
@@ -156,8 +156,8 @@ maybeAnnounce now pubDate | shouldAnnounce now pubDate = pubsubhubbub
                           | otherwise = return ()
 
 pubsubhubbub :: IO ()
-pubsubhubbub = withCurlDo $ do
-    curlPost hubURL ["hub.mode=publish", "hub.url=" ++ feedURL]
+pubsubhubbub = do
+    r <- simpleHTTP (postRequestWithBody hubURL "application/x-www-form-urlencoded" ("hub.mode=publishhub&url=" ++ feedURL))
     return ()
 
 main :: IO ()

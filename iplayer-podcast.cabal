@@ -1,5 +1,5 @@
 name:                iplayer-podcast
-version:             0.1.0.0
+version:             0.1.0.1
 author:              Joshua Goodwin
 maintainer:          j@joshuagoodw.in
 build-type:          Simple
@@ -7,4 +7,4 @@ cabal-version:       >=1.8
 
 executable iplayer-podcast
   main-is:           iplayer-podcast.hs
-  build-depends:     base ==4.7.*, xml ==1.3.*, datetime ==0.2.*, split ==0.2.*, directory ==1.2.*, curl ==1.3.*
+  build-depends:     base, HTTP, xml ==1.3.*, datetime ==0.2.*, split ==0.2.*, directory ==1.2.*
