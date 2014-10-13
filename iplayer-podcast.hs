@@ -1,22 +1,17 @@
 module Main where
 
 import System.IO (readFile, writeFile, IOMode (ReadMode), withFile, hFileSize)
-import System.Directory (doesFileExist)
+import System.Directory (getDirectoryContents, getModificationTime)
 import Control.Monad (filterM, mapM)
-import Data.List (isPrefixOf, stripPrefix)
+import Data.List (isSuffixOf)
 import Data.List.Split (wordsBy)
-import Data.Maybe (fromJust)
 import Data.DateTime
 import Text.XML.Light.Types (Content (Elem, Text), Element (..), Attr (..), QName (..), CData (..), CDataKind (CDataText, CDataVerbatim))
 import Text.XML.Light.Output (ppElement)
 import Network.HTTP (simpleHTTP, postRequestWithBody)
 
-type Field   = String
-type Episode = [Field]
-type History = [Episode]
-type EpisodeWithLength  = (Episode, Integer)
-type HistoryWithLengths = [EpisodeWithLength]
-
+type PID = String
+data Episode = Episode FilePath Integer DateTime deriving Show
 
 -- configuration
 
@@ -29,29 +24,29 @@ stylesheetURL = "i.xsl"
 hubURL        = "https://pubsubhubbub.appspot.com/"
 
 
-cauterise :: String -> History
-cauterise s = map toFields episodes
-    where episodes = lines s
-          toFields = wordsBy (== '|')
+isMediaFile :: FilePath -> Bool
+isMediaFile ('.':_) = False
+isMediaFile l = isSuffixOf ".m4a" l
 
-hasEpisodePathCorrectPrefix :: Episode -> Bool
-hasEpisodePathCorrectPrefix e = mediaPath `isPrefixOf` (e !! 6)
+-- chokes on non-iplayer files
+getPID :: FilePath -> PID
+getPID e = parts !! index
+    where parts = wordsBy (== '_') e
+          index = (length parts) - 2
 
-doesEpisodeFileExist :: Episode -> IO Bool
-doesEpisodeFileExist e = doesFileExist (e !! 6)
-
-addLength :: Episode -> IO EpisodeWithLength
-addLength e = do
-    length <- withFile (e !! 6) ReadMode hFileSize
-    return (e, length)
+toEpisode :: FilePath -> IO Episode
+toEpisode f = do
+    length <- withFile f ReadMode hFileSize
+    time <- getModificationTime f
+    return (Episode f length time)
 
 toURL :: String -> String
-toURL p = mediaURL ++ fromJust (stripPrefix mediaPath p)
+toURL p = mediaURL ++ p
 
-latestTimestamp :: HistoryWithLengths -> DateTime
-latestTimestamp h = fromSeconds $ read $ maximum timestamps
-    where timestamps = map timestamp h
-          timestamp (x, _) = x !! 4
+latestTimestamp :: [Episode] -> DateTime
+latestTimestamp es = maximum $ timestamps
+    where timestamps = map timestampOf es
+          timestampOf (Episode _ _ t) = t
 
 rfcFormatDateTime :: DateTime -> String
 rfcFormatDateTime = formatDateTime "%a, %d %b %Y %H:%M:%S %z"
@@ -77,25 +72,24 @@ simpleElement key value =
         Nothing
         )
 
-item :: EpisodeWithLength -> Content
-item (_:name:episode:_:timestamp:_:filename:_:duration:description:_:_:_:link:_, length) =
+item :: Episode -> Content
+item (Episode name length time) =
     Elem (Element
         (QName "item" Nothing Nothing)
         []
-        [ simpleElement "title"   (name ++ " - " ++ episode)
-        , simpleElement "pubDate" (rfcFormatDateTime $ fromSeconds $ read timestamp)
+        [ simpleElement "title"   (name)
+        , simpleElement "pubDate" (rfcFormatDateTime $ time)
         , Elem (Element
             (QName "description" Nothing Nothing)
             []
             [Text (CData CDataVerbatim ("<p>" ++ description ++ "</p>") Nothing)]
             Nothing
             )
-        , simpleElement "link"            link
-        , simpleElement "guid"            (toURL filename)
-        , simpleElement "itunes:duration" duration
+        , simpleElement "link"            url
+        , simpleElement "guid"            url
         , Elem (Element
             (QName "enclosure" Nothing Nothing)
-            [ simpleAttr "url"    (toURL filename)
+            [ simpleAttr "url"    url
             , simpleAttr "type"   "audio/m4a"
             , simpleAttr "length" (show length)
             ]
@@ -104,8 +98,10 @@ item (_:name:episode:_:timestamp:_:filename:_:duration:description:_:_:_:link:_,
             )
         ]
         Nothing)
+    where url = toURL name
+          description = ""
 
-feed :: HistoryWithLengths -> DateTime -> Element
+feed :: [Episode] -> DateTime -> Element
 feed history currentTime =
     Element
     (QName "rss" Nothing Nothing)
@@ -162,14 +158,11 @@ pubsubhubbub = do
 
 main :: IO ()
 main = do
-    text <- readFile historyPath
-    let episodes = reverse $ filter hasEpisodePathCorrectPrefix $ cauterise text
-    episodes <- filterM doesEpisodeFileExist episodes
-    episodesWithLengths <- mapM addLength episodes
+    files <- getDirectoryContents mediaPath
+    episodes <- mapM toEpisode $ filter isMediaFile files
     currentTime <- getCurrentTime
-    let xml = ppTopElement $ feed episodesWithLengths currentTime
-    putStrLn xml
+    let xml = ppTopElement $ feed episodes currentTime
     writeFile outputPath xml
     -- if the latest epsiode was downloaded less than 5 minutes ago,
     -- contact the pubsubhubbub hub
-    maybeAnnounce currentTime $ latestTimestamp episodesWithLengths
+    maybeAnnounce currentTime $ latestTimestamp episodes
