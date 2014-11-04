@@ -3,7 +3,8 @@ module Main where
 import System.IO (readFile, writeFile, IOMode (ReadMode), withFile, hFileSize)
 import System.Directory (getDirectoryContents, getModificationTime)
 import Control.Monad (filterM, mapM)
-import Data.List (isSuffixOf)
+import Data.List (isSuffixOf, sortBy)
+import Data.Ord (compare)
 import Data.List.Split (wordsBy)
 import Data.DateTime
 import Text.XML.Light.Types (Content (Elem, Text), Element (..), Attr (..), QName (..), CData (..), CDataKind (CDataText, CDataVerbatim))
@@ -155,6 +156,9 @@ maybeAnnounce :: DateTime -> DateTime -> IO ()
 maybeAnnounce now pubDate | shouldAnnounce now pubDate = pubsubhubbub
                           | otherwise = return ()
 
+compareEpisodes :: Episode -> Episode -> Ordering
+compareEpisodes (Episode _ _ t1) (Episode _ _ t2) = compare t2 t1
+
 pubsubhubbub :: IO ()
 pubsubhubbub = do
     r <- simpleHTTP (postRequestWithBody hubURL "application/x-www-form-urlencoded" ("hub.mode=publishhub&url=" ++ feedURL))
@@ -165,7 +169,7 @@ main = do
     files <- getDirectoryContents mediaPath
     episodes <- mapM toEpisode $ filter isMediaFile files
     currentTime <- getCurrentTime
-    let xml = ppTopElement $ feed episodes currentTime
+    let xml = ppTopElement $ feed (sortBy compareEpisodes episodes) currentTime
     writeFile outputPath xml
     -- if the latest epsiode was downloaded less than 5 minutes ago,
     -- contact the pubsubhubbub hub
