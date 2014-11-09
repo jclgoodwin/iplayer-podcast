@@ -21,7 +21,7 @@ mediaPath     = "/usr/share/nginx/html/joshuagoodw.in/bucket/"
 historyPath   = "/home/josh/.get_iplayer/download_history"
 outputPath    = "/usr/share/nginx/html/joshuagoodw.in/bucket/podcast/i.xml"
 stylesheetURL = "i.xsl"
-hubURL        = "https://pubsubhubbub.appspot.com/"
+hubURL        = "http://pubsubhubbub.appspot.com/"
 
 
 isMediaFile :: FilePath -> Bool
