@@ -27,7 +27,12 @@ hubURL        = "http://pubsubhubbub.appspot.com/"
 
 isMediaFile :: FilePath -> Bool
 isMediaFile ('.':_) = False
-isMediaFile l = isSuffixOf ".m4a" l
+isMediaFile f = anyAreSuffixesOf ["m4a", "mp4", "m4v"] f
+
+anyAreSuffixesOf :: Eq a => [[a]] -> [a] -> Bool
+anyAreSuffixesOf [n] h = isSuffixOf n h
+anyAreSuffixesOf (n:ns) h | isSuffixOf n h = True
+                          | otherwise = anyAreSuffixesOf ns h
 
 -- chokes on non-get_iplayer filenames
 getPID :: FilePath -> PID
@@ -87,11 +92,11 @@ item (Episode name length time) =
         , Elem (Element
             (QName "description" Nothing Nothing)
             []
-            [Text (CData CDataVerbatim ("<p>" ++ description ++ "</p>") Nothing)]
+            [Text (CData CDataVerbatim description Nothing)]
             Nothing
             )
-        , simpleElement "link"            url
-        , simpleElement "guid"            url
+        , simpleElement "link" url
+        , simpleElement "guid" url
         , Elem (Element
             (QName "enclosure" Nothing Nothing)
             [ simpleAttr "url"    url
