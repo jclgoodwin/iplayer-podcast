@@ -97,7 +97,7 @@ item (_:name:episode:_:timestamp:_:filename:_:duration:description:_:_:_:link:_,
     Elem (Element
         (QName "item" Nothing Nothing)
         []
-        [ simpleElement "title"   (name ++ episode)
+        [ simpleElement "title"   (name ++ " - " ++ episode)
         , simpleElement "pubDate" (rfcFormatDateTime $ fromSeconds $ read timestamp)
         , Elem (Element
             (QName "description" Nothing Nothing)
