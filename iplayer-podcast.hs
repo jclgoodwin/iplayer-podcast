@@ -5,7 +5,7 @@ import System.Directory (doesFileExist)
 import Control.Monad (filterM, mapM)
 import Data.List (isPrefixOf, isSuffixOf, stripPrefix)
 --import Data.Ord (compare)
-import Data.List.Split (wordsBy)
+import Data.List.Utils (split, replace)
 import Data.Maybe (fromJust)
 import Data.DateTime
 import Text.XML.Light.Types (Content (Elem, Text), Element (..), Attr (..), QName (..), CData (..), CDataKind (CDataText, CDataVerbatim))
@@ -32,7 +32,7 @@ hubURL        = "http://pubsubhubbub.appspot.com/"
 cauterise :: String -> History
 cauterise s = map toFields episodes
     where episodes = lines s
-          toFields = wordsBy (== '|')
+          toFields = split "|"
 
 hasEpisodePathCorrectPrefix :: Episode -> Bool
 hasEpisodePathCorrectPrefix e = mediaPath `isPrefixOf` (e !! 6)
@@ -53,12 +53,6 @@ anyAreSuffixesOf (n:ns) h | isSuffixOf n h = True
 isMediaFile :: FilePath -> Bool
 isMediaFile ('.':_) = False
 isMediaFile f = anyAreSuffixesOf ["m4a", "mp4", "m4v"] f
-
--- chokes on non-get_iplayer filenames
-getPID :: String -> String
-getPID e = parts !! index
-    where parts = wordsBy (== '_') e
-          index = (length parts) - 2
 
 toMediaFileURL :: FilePath -> String
 toMediaFileURL p = mediaURL ++ fromJust (stripPrefix mediaPath p)
@@ -102,7 +96,7 @@ item (_:name:episode:_:timestamp:_:filename:_:duration:description:_:_:_:link:_,
         , Elem (Element
             (QName "description" Nothing Nothing)
             []
-            [Text (CData CDataVerbatim ("<p>" ++ description ++ "</p>") Nothing)]
+            [Text (CData CDataVerbatim ("<p>" ++ (replace "  " "</p><p>" description) ++ "</p>") Nothing)]
             Nothing
             )
         , simpleElement "link" link
