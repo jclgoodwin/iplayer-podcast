@@ -1,9 +1,9 @@
 name:                iplayer-podcast
-version:             0.1.1
+version:             0.2
 author:              Joshua Goodwin
 maintainer:          j@joshuagoodw.in
 build-type:          Simple
-cabal-version:       >=1.20
+cabal-version:       >=1.10
 
 executable iplayer-podcast
   main-is:           iplayer-podcast.hs
