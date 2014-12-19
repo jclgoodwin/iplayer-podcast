@@ -3,9 +3,10 @@ module Main where
 import System.IO (readFile, writeFile, IOMode (ReadMode), withFile, hFileSize)
 import System.Directory (doesFileExist)
 import Control.Monad (filterM, mapM)
-import Data.List (isPrefixOf, isSuffixOf)
+import Data.List (isPrefixOf, isSuffixOf, stripPrefix)
 --import Data.Ord (compare)
 import Data.List.Split (wordsBy)
+import Data.Maybe (fromJust)
 import Data.DateTime
 import Text.XML.Light.Types (Content (Elem, Text), Element (..), Attr (..), QName (..), CData (..), CDataKind (CDataText, CDataVerbatim))
 import Text.XML.Light.Output (ppElement)
@@ -60,7 +61,7 @@ getPID e = parts !! index
           index = (length parts) - 2
 
 toMediaFileURL :: FilePath -> String
-toMediaFileURL p = mediaURL ++ p
+toMediaFileURL p = mediaURL ++ fromJust (stripPrefix mediaPath p)
 
 latestTimestamp :: HistoryWithLengths -> DateTime
 latestTimestamp h = fromSeconds $ read $ maximum timestamps
