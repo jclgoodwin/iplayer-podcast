@@ -12,6 +12,8 @@ import Text.XML.Light.Types (Content (Elem, Text), Element (..), Attr (..), QNam
 import Text.XML.Light.Output (ppElement)
 import Network.HTTP (simpleHTTP, postRequestWithBody)
 
+
+
 type Field = String
 type Episode = [Field]
 type History = [Episode]
@@ -87,7 +89,7 @@ simpleElement key value =
         )
 
 item :: EpisodeWithLength -> Content
-item (_:name:episode:_:timestamp:_:filename:_:duration:description:_:_:_:link:_, length) =
+item (_:name:episode:_:timestamp:_:filename:_:duration:description:_:_:image:_:link:_, length) =
     Elem (Element
         (QName "item" Nothing Nothing)
         []
@@ -111,6 +113,7 @@ item (_:name:episode:_:timestamp:_:filename:_:duration:description:_:_:_:link:_,
             Nothing
             )
         , simpleElement "itunes:duration" duration
+        , simpleElement "itunes:image"    (replace "_360" "_640" image)
         ]
         Nothing)
     where mediaFileURL = toMediaFileURL filename
