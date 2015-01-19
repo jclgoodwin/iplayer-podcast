@@ -113,7 +113,12 @@ item (_:name:episode:_:timestamp:_:filename:_:duration:description:_:_:image:_:l
             Nothing
             )
         , simpleElement "itunes:duration" duration
-        , simpleElement "itunes:image"    (replace "_360" "_640" image)
+        , Elem (Element
+            (QName "image" Nothing (Just "itunes"))
+            [simpleAttr "href" (replace "360" "640" image)]
+            []
+            Nothing
+            )
         ]
         Nothing)
     where mediaFileURL = toMediaFileURL filename
@@ -149,6 +154,12 @@ feed history currentTime =
                 [ simpleAttr "rel"  "self"
                 , simpleAttr "href" feedURL
                 ]
+                []
+                Nothing
+                )
+            , Elem (Element
+                (QName "image" Nothing (Just "itunes"))
+                [simpleAttr "href" "http://static.bbci.co.uk/h4base/0.210.10/img/apple-touch-icon.png"]
                 []
                 Nothing
                 )
