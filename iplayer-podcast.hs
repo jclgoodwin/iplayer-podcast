@@ -59,6 +59,10 @@ isMediaFile f = anyAreSuffixesOf ["m4a", "mp4", "m4v"] f
 toMediaFileURL :: FilePath -> String
 toMediaFileURL p = mediaURL ++ fromJust (stripPrefix mediaPath p)
 
+getMimeType :: FilePath -> String
+getMimeType f | isSuffixOf ".m4a" f = "audio/mp4"
+              | anyAreSuffixesOf [".mp4", ".m4v"] f = "video/mp4"
+
 latestTimestamp :: HistoryWithLengths -> DateTime
 latestTimestamp h = fromSeconds $ read $ maximum timestamps
     where timestamps = map timestamp h
@@ -106,7 +110,7 @@ item (_:name:episode:_:timestamp:_:filename:_:duration:description:_:_:image:_:l
         , Elem (Element
             (QName "enclosure" Nothing Nothing)
             [ simpleAttr "url"    mediaFileURL
-            , simpleAttr "type"   "audio/m4a"
+            , simpleAttr "type"   (getMimeType filename)
             , simpleAttr "length" (show length)
             ]
             []
