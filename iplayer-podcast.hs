@@ -1,6 +1,6 @@
 module Main where
 
-import System.IO (readFile, writeFile, IOMode (ReadMode), withFile, hFileSize)
+import System.IO (readFile, putStr, IOMode (ReadMode), withFile, hFileSize)
 import System.Directory (doesFileExist)
 import Control.Monad (filterM, mapM)
 import Data.List (isPrefixOf, isSuffixOf, stripPrefix)
@@ -22,13 +22,15 @@ type HistoryWithLengths = [EpisodeWithLength]
 
 -- configuration
 
-feedURL       = "http://static.joshuagoodw.in/bucket/podcast/"
-mediaURL      = "http://static.joshuagoodw.in/bucket/"
-mediaPath     = "/usr/share/nginx/html/joshuagoodw.in/bucket/"
-historyPath   = "/home/josh/.get_iplayer/download_history"
-outputPath    = "/usr/share/nginx/html/joshuagoodw.in/bucket/podcast/i.xml"
-stylesheetURL = "i.xsl"
-hubURL        = "http://pubsubhubbub.appspot.com/"
+feedTitle       = "iPlayer Recordings"
+feedDescription = "Mostly weak drama.If you use this podcast feed and aren't me, I'd be interested in hearing about it (email me)"
+
+feedURL         = "http://static.joshuagoodw.in/bucket/podcast/"
+mediaURL        = "http://static.joshuagoodw.in/bucket/"
+mediaPath       = "/usr/share/nginx/html/joshuagoodw.in/bucket/"
+historyPath     = "/home/josh/.get_iplayer/download_history"
+stylesheetURL   = "i.xsl"
+hubURL          = "http://pubsubhubbub.appspot.com/"
 
 
 cauterise :: String -> History
@@ -140,8 +142,8 @@ feed history currentTime =
         (QName "channel" Nothing Nothing)
         []
         (
-            [ simpleElement "title"         "iPlayer Recordings"
-            , simpleElement "description"   "Mostly weak drama"
+            [ simpleElement "title"         feedTitle
+            , simpleElement "description"   feedDescription
             , simpleElement "link"          feedURL
             , simpleElement "pubDate"       (rfcFormatDateTime pubDate)
             , simpleElement "lastBuildDate" (rfcFormatDateTime currentTime)
@@ -199,7 +201,7 @@ main = do
     episodesWithLengths <- mapM addLength episodes
     currentTime <- getCurrentTime
     let xml = ppTopElement $ feed episodesWithLengths currentTime
-    writeFile outputPath xml
+    putStr xml
     -- if the latest epsiode was downloaded less than 5 minutes ago,
     -- contact the pubsubhubbub hub
     maybeAnnounce currentTime $ latestTimestamp episodesWithLengths
