@@ -19,6 +19,6 @@ It goes without saying that you'll need to download some things using get_iplaye
 I've added all sorts of things to [the PVR][pvr], and a line in my `crontab` runs `get_iplayer --pvr-run` periodically.
 
 [gi]: http://squarepenguin.co.uk/
-[martin]: https://github.com/martinohanlon/get_iplayer_genrss)
+[martin]: https://github.com/martinohanlon/get_iplayer_genrss
 [app]: http://www.bbc.co.uk/blogs/internet/entries/4eba16ca-f1e8-4744-a305-7a31b3804535
 [pvr]: https://squarepenguin.co.uk/wiki/documentation/#pvr-usage
