@@ -5,7 +5,7 @@ but this one is mine and it's what I use.
 
 The iPlayer Radio app (on modern versions of Android and iOS) [now supports downloads][app],
 which almost makes this redundant.
-But at the time of writing those downloads are exclusively 320kpbs,
+But at the time of writing those downloads are exclusively 320kbps
 which is brilliant for music but wasteful for speech (I find 48kbps (`flashaaclow`) to be perfectly acceptable!).
 
 ## Usage
