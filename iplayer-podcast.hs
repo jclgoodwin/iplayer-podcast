@@ -4,15 +4,12 @@ import System.IO (readFile, putStr, IOMode (ReadMode), withFile, hFileSize)
 import System.Directory (doesFileExist)
 import Control.Monad (filterM, mapM)
 import Data.List (isPrefixOf, isSuffixOf, stripPrefix)
---import Data.Ord (compare)
 import Data.List.Utils (split, replace)
 import Data.Maybe (fromJust)
 import Data.DateTime
 import Text.XML.Light.Types (Content (Elem, Text), Element (..), Attr (..), QName (..), CData (..), CDataKind (CDataText, CDataVerbatim))
 import Text.XML.Light.Output (ppElement)
 import Network.HTTP (simpleHTTP, postRequestWithBody)
-
-
 
 type Field = String
 type Episode = [Field]
@@ -23,11 +20,10 @@ type HistoryWithLengths = [EpisodeWithLength]
 -- configuration
 
 feedTitle       = "iPlayer Recordings"
-feedDescription = "Mostly weak drama.If you use this podcast feed and aren't me, I'd be interested in hearing about it (email me)"
-
+feedDescription = "This podcast feed is for my personal use"
 feedURL         = "http://static.joshuagoodw.in/bucket/podcast/"
 mediaURL        = "http://static.joshuagoodw.in/bucket/"
-mediaPath       = "/usr/share/nginx/html/joshuagoodw.in/bucket/"
+mediaPath       = "/home/josh/podcast/"
 historyPath     = "/home/josh/.get_iplayer/download_history"
 stylesheetURL   = "i.xsl"
 hubURL          = "http://pubsubhubbub.appspot.com/"
@@ -121,7 +117,7 @@ item (_:name:episode:_:timestamp:_:filename:_:duration:description:_:_:image:_:l
         , simpleElement "itunes:duration" duration
         , Elem (Element
             (QName "image" Nothing (Just "itunes"))
-            [simpleAttr "href" (replace "360" "640" image)]
+            [simpleAttr "href" image]
             []
             Nothing
             )
@@ -165,7 +161,7 @@ feed history currentTime =
                 )
             , Elem (Element
                 (QName "image" Nothing (Just "itunes"))
-                [simpleAttr "href" "http://static.bbci.co.uk/h4base/0.210.10/img/apple-touch-icon.png"]
+                [simpleAttr "href" "http://static.joshuagoodw.in/bucket/podcast/bbc.gif"]
                 []
                 Nothing
                 )
