@@ -1,1 +1,15 @@
 language: haskell
+
+cache:
+  directories:
+  - $HOME/.ghc
+  - $HOME/.cabal
+
+addons:
+  apt:
+    packages:
+    - hlint
+
+script:
+ - cabal configure --enable-tests && cabal build && cabal test
+ - hlint .
