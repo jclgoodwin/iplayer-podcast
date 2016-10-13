@@ -46,8 +46,8 @@ addLength e = do
     return (e, length)
 
 anyAreSuffixesOf :: Eq a => [[a]] -> [a] -> Bool
-anyAreSuffixesOf [n] h = isSuffixOf n h
-anyAreSuffixesOf (n:ns) h | isSuffixOf n h = True
+anyAreSuffixesOf [n] h = n `isSuffixOf` h
+anyAreSuffixesOf (n:ns) h | n `isSuffixOf` h = True
                           | otherwise = anyAreSuffixesOf ns h
 
 isMediaFile :: FilePath -> Bool
@@ -58,7 +58,7 @@ toMediaFileURL :: FilePath -> String
 toMediaFileURL p = mediaURL ++ fromJust (stripPrefix mediaPath p)
 
 getMimeType :: FilePath -> String
-getMimeType f | isSuffixOf ".m4a" f = "audio/mp4"
+getMimeType f | ".m4a" `isSuffixOf` f = "audio/mp4"
               | anyAreSuffixesOf [".mp4", ".m4v"] f = "video/mp4"
 
 latestTimestamp :: HistoryWithLengths -> DateTime
@@ -100,7 +100,7 @@ item (_:name:episode:_:timestamp:_:filename:_:duration:description:_:_:image:_:l
         , Elem (Element
             (QName "description" Nothing Nothing)
             []
-            [Text (CData CDataVerbatim ("<p>" ++ (replace "  " "</p><p>" description) ++ "</p>") Nothing)]
+            [Text (CData CDataVerbatim ("<p>" ++ replace "  " "</p><p>" description ++ "</p>") Nothing)]
             Nothing
             )
         , simpleElement "link" link
