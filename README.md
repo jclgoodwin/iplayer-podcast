@@ -3,10 +3,8 @@ This Haskell script turns a [get_iplayer][gi] download history file into a podca
 There are other tools that do the same or similar things, such as [Martin O'Hanlon's get_iplayer_genrss][martin],
 but this one is mine and it's what I use.
 
-The iPlayer Radio app (on modern versions of Android and iOS) [now supports downloads][app],
-which almost makes this redundant.
-But at the time of writing those downloads are exclusively 320kbps
-which is brilliant for music but wasteful for speech (I find 48kbps (`flashaaclow`) to be perfectly acceptable!).
+These days, the BBC Sounds app exists and supports downloads,
+but I'm still using this because it works and I guess I just really like my podcast app/breaking the law.
 
 ## Usage
 
